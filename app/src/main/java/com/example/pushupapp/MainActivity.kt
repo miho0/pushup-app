@@ -2,6 +2,7 @@ package com.example.pushupapp
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
 import android.os.SystemClock
 import android.util.Log
 import android.widget.Button
@@ -9,6 +10,8 @@ import android.widget.Chronometer
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.util.Stack
 
 class MainActivity : AppCompatActivity() {
@@ -26,6 +29,8 @@ class MainActivity : AppCompatActivity() {
 
     private var isRunning: Boolean = false
 
+    private val handler: Handler = Handler()
+    private lateinit var runnable: Runnable
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -114,6 +119,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        runnable = object: Runnable {
+            override fun run() {
+                updatePerMinuteResult()
+                handler.postDelayed(this, 1000)
+            }
+        }
+
+        handler.post(runnable)
+
     }
 
     private fun addScore(amount: Int, player: Int) {
@@ -143,22 +157,24 @@ class MainActivity : AppCompatActivity() {
         playerTwoScoreText.text = playerTwoScore.toString()
         total = playerOneScore + playerTwoScore
         totalText.text = total.toString()
-        perMinuteText.text = calculatePerMinute().toString() + " / min"
     }
 
-    private fun calculatePerMinute(): Double {
-        return try {
-            val elapsedTime = ((SystemClock.elapsedRealtime() - chronometer.base) / 1000).toDouble()
-            val minutes = elapsedTime / 60
-            val seconds = elapsedTime % 60
-            val remainder: Double = seconds / 60
-            val totalTime = minutes + remainder
-            Log.i("aa", totalTime.toString())
-            (total / totalTime).toDouble()
-        } catch (e: Exception) {
-            0.0
+    private fun updatePerMinuteResult() {
+        if (isRunning) {
+            var result = BigDecimal(0.0)
+            try {
+                val elapsedTime = ((SystemClock.elapsedRealtime() - chronometer.base) / 1000).toDouble()
+                result = BigDecimal((total / elapsedTime)*60).setScale(4, RoundingMode.HALF_UP)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            perMinuteText.text = "$result / min"
         }
+    }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        handler.removeCallbacks(runnable)
     }
 
 }
