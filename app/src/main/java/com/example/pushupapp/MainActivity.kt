@@ -1,5 +1,6 @@
 package com.example.pushupapp
 
+import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
@@ -25,7 +26,7 @@ class MainActivity : AppCompatActivity() {
     private var playerTwoScore: Int = 0
     private var total: Int = 0
 
-    private val entries: Stack<Entry> = Stack<Entry>()
+    private val entries: Stack<PushupEntry> = Stack<PushupEntry>()
 
     private var isRunning: Boolean = false
 
@@ -119,6 +120,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        val statsButton: Button = findViewById(R.id.stats)
+
+        statsButton.setOnClickListener {
+            val intent = Intent(this, StatisticsActivity::class.java)
+            intent.putExtra("entries", entries.toTypedArray())
+            startActivity(intent)
+        }
+
         runnable = object: Runnable {
             override fun run() {
                 updatePerMinuteResult()
@@ -131,17 +140,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun addScore(amount: Int, player: Int) {
+        val elapsedTime = ((SystemClock.elapsedRealtime() - chronometer.base) / 1000).toDouble()
         if (player == 1) {
             playerOneScore += amount
-            entries.push(Entry(player, amount))
+            entries.push(PushupEntry(player, amount, elapsedTime))
         } else {
             playerTwoScore += amount
-            entries.push(Entry(player, amount))
+            entries.push(PushupEntry(player, amount, elapsedTime))
         }
         updateTotal()
     }
 
-    private fun subtractScore(entry: Entry) {
+    private fun subtractScore(entry: PushupEntry) {
         val player = entry.player
         val amount = entry.amount
         if (player == 1) {
